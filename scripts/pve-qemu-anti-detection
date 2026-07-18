@@ -20,6 +20,7 @@ QEMU_GIT_MIRROR=""  # Override URL for QEMU submodule (used in China mirror mode
 USE_CN_MIRROR=0
 BUILD_JOBS=0
 AUTO_REBUILD="yes"
+DISABLE_RBD=0
 
 # Load configuration overrides
 if [ -f "$CONF_FILE" ]; then
@@ -165,6 +166,25 @@ remove_disable_downloads() {
     fi
 }
 
+disable_rbd_support() {
+    # Drop the librbd-dev build-dep and flip --enable-rbd to --disable-rbd.
+    # Useful when the PVE Ceph repo hasn't published a librbd-dev/librados-dev
+    # build matching the currently-installed librbd1/librados2 point release
+    # (a recurring situation right after PVE ships a Ceph hotfix), since that
+    # mismatch makes apt want to remove ceph-common and everything that
+    # depends on it (the whole PVE management stack) to reconcile versions.
+    # Only safe if you don't use RBD/Ceph storage on this host.
+    log "Disabling RBD/Ceph support for this build (--no-rbd)..."
+    if grep -q 'librbd-dev' debian/control; then
+        sed -i '/librbd-dev/d' debian/control
+        log "Removed librbd-dev from debian/control Build-Depends"
+    fi
+    if grep -q -- '--enable-rbd' debian/rules; then
+        sed -i 's/--enable-rbd/--disable-rbd/' debian/rules
+        log "Set --disable-rbd in debian/rules"
+    fi
+}
+
 setup_cn_mirror() {
     log "Using China mainland mirror mode..."
     # Use GitHub mirror for pve-qemu (proxmox official git is very slow from China)
@@ -231,6 +251,10 @@ do_install() {
 
     # Find the right commit for the target version
     find_pve_qemu_commit "$target_version"
+
+    if [ "$DISABLE_RBD" -eq 1 ]; then
+        disable_rbd_support
+    fi
 
     # Install build dependencies via mk-build-deps
     log "Refreshing apt package lists..."
@@ -551,6 +575,12 @@ Commands:
 
 Global Options (place BEFORE the command):
   --cn, --china        Use China mainland mirrors (GitHub) for faster downloads
+  --no-rbd             Build without RBD/Ceph support (drops the librbd-dev
+                       build-dep). Use this if apt wants to remove ceph-common
+                       and your whole PVE stack to satisfy librbd-dev/librados-dev
+                       version pins after a Ceph point release the PVE repo
+                       hasn't published matching -dev packages for yet. Only
+                       safe if you don't use RBD/Ceph storage on this host.
   status              Show current patching status
   hold                Hold pve-qemu-kvm to prevent apt from overwriting it
   unhold              Remove hold on pve-qemu-kvm
@@ -594,6 +624,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --cn|--china)
             USE_CN_MIRROR=1
+            shift
+            ;;
+        --no-rbd)
+            DISABLE_RBD=1
             shift
             ;;
         *)

@@ -1,3 +1,17 @@
+pve-qemu-anti-detection (1.0.3-1) stable; urgency=medium
+
+  * Add --no-rbd flag / DISABLE_RBD config option to build pve-qemu-kvm
+    without RBD/Ceph support: drops librbd-dev from Build-Depends and
+    flips --enable-rbd to --disable-rbd in debian/rules. Needed when the
+    PVE Ceph repo hasn't published librbd-dev/librados-dev matching the
+    currently-installed librbd1/librados2 point release (a recurring
+    situation right after a Ceph hotfix), since forcing that version
+    match otherwise makes apt want to remove ceph-common and everything
+    depending on it (pve-manager, qemu-server, pve-ha-manager,
+    pve-container, proxmox-ve) to reconcile versions
+
+ -- Hikaru <i@rua.moe>  Sat, 18 Jul 2026 00:00:00 +0800
+
 pve-qemu-anti-detection (1.0.2-1) stable; urgency=medium
 
   * Add QEMU 11.0 support for pve-qemu-kvm 11.0.0-3 (Proxmox VE 9.2.2)
