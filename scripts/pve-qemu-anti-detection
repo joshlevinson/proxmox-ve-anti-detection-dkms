@@ -522,7 +522,7 @@ do_unhold() {
 
 show_help() {
     cat <<EOF
-${PROG_NAME} v1.0.1 - DKMS-like auto-patching for pve-qemu-kvm
+${PROG_NAME} v1.0.2 - DKMS-like auto-patching for pve-qemu-kvm
 Author: Hikaru <i@rua.moe>
 Source: https://github.com/HikaruChang/proxmox-ve-anti-detection-dkms
 

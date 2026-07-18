@@ -349,10 +349,9 @@ diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-ant
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/pci-host/gpex.c b/hw/pci-host/gpex.c
 --- a/hw/pci-host/gpex.c	2026-03-21 02:19:08.640080992 +0800
 +++ b/hw/pci-host/gpex.c	2026-03-21 02:27:52.964413809 +0800
-@@ -243,7 +243,7 @@
+@@ -242,6 +242,6 @@
      DeviceClass *dc = DEVICE_CLASS(klass);
- 
-     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
+
 -    dc->desc = "QEMU generic PCIe host bridge";
 +    dc->desc = "ASUS generic PCIe host bridge";
      dc->vmsd = &vmstate_gpex_root;
@@ -402,7 +401,7 @@ diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-ant
 -        memcpy(&r->buf[16], "QEMU TARGET     ", 16);
 +        memcpy(&r->buf[8], "ASUS    ", 8);
 +        memcpy(&r->buf[16], "ASUS TARGET     ", 16);
-         pstrcpy((char *) &r->buf[32], 4, qemu_hw_version());
+         pstrcpy((char *) &r->buf[32], 4, QEMU_HW_VERSION);
      }
      return true;
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/scsi/scsi-disk.c b/hw/scsi/scsi-disk.c
@@ -452,14 +451,13 @@ diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-ant
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/smbios/smbios.c b/hw/smbios/smbios.c
 --- a/hw/smbios/smbios.c	2026-03-21 02:19:08.768080341 +0800
 +++ b/hw/smbios/smbios.c	2026-03-21 02:27:53.021413519 +0800
-@@ -574,7 +574,7 @@
- 
-     t->bios_characteristics = cpu_to_le64(0x08); /* Not supported */
-     t->bios_characteristics_extension_bytes[0] = 0;
--    t->bios_characteristics_extension_bytes[1] = 0x14; /* TCD/SVVP | VM */
-+    t->bios_characteristics_extension_bytes[1] = 0x08; /* TCD/SVVP | VM */
+@@ -583,6 +583,6 @@
      if (smbios_type0.uefi) {
          t->bios_characteristics_extension_bytes[1] |= 0x08; /* |= UEFI */
+     }
+     if (smbios_type0.vm) {
+-        t->bios_characteristics_extension_bytes[1] |= 0x10; /* |= VM */
++        /* [pve-qemu-anti-detection] do not advertise the VM bit */
      }
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/usb/dev-audio.c b/hw/usb/dev-audio.c
 --- a/hw/usb/dev-audio.c	2026-03-21 02:19:08.812080117 +0800
@@ -892,18 +890,6 @@ diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-ant
  
  enum virtio_scsi_vq_id {
      VR_CONTROL  = 0,
-diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/target/i386/kvm/kvm.c b/target/i386/kvm/kvm.c
---- a/target/i386/kvm/kvm.c	2026-03-21 02:19:10.196073077 +0800
-+++ b/target/i386/kvm/kvm.c	2026-03-21 02:27:53.266412272 +0800
-@@ -2249,7 +2249,7 @@
-         abort();
- #endif
-     } else if (cpu->expose_kvm) {
--        memcpy(signature, "KVMKVMKVM\0\0\0", 12);
-+        memcpy(signature, "GenuineIntel", 12);
-         c = &cpuid_data.entries[cpuid_i++];
-         c->function = KVM_CPUID_SIGNATURE | kvm_base;
-         c->eax = KVM_CPUID_FEATURES | kvm_base;
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/target/s390x/tcg/misc_helper.c b/target/s390x/tcg/misc_helper.c
 --- a/target/s390x/tcg/misc_helper.c	2026-03-21 02:19:10.399072044 +0800
 +++ b/target/s390x/tcg/misc_helper.c	2026-03-21 02:27:53.294412130 +0800

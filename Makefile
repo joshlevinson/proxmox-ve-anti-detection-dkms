@@ -1,5 +1,5 @@
 PACKAGE_NAME = pve-qemu-anti-detection
-VERSION = 1.0.0
+VERSION = 1.0.2
 
 .PHONY: all build clean install deb
 
