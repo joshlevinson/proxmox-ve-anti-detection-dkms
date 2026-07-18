@@ -233,10 +233,25 @@ do_install() {
     find_pve_qemu_commit "$target_version"
 
     # Install build dependencies via mk-build-deps
+    log "Refreshing apt package lists..."
+    apt-get update >> "$LOG_FILE" 2>&1 || true
+
     log "Installing build dependencies (this may take a while)..."
     if ! mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control >> "$LOG_FILE" 2>&1; then
-        log_warn "mk-build-deps had issues, attempting to continue..."
         apt-get install -f -y >> "$LOG_FILE" 2>&1 || true
+    fi
+
+    # Verify build deps actually resolved before sinking 30-60 minutes into a doomed build
+    if ! dpkg-checkbuilddeps debian/control >> "$LOG_FILE" 2>&1; then
+        log_error "Build dependencies are still unmet after mk-build-deps:"
+        dpkg-checkbuilddeps debian/control 2>&1 | tee -a "$LOG_FILE" >&2
+        log_error ""
+        log_error "This usually means your APT sources are missing packages this pve-qemu"
+        log_error "version needs (commonly: contrib/non-free(-firmware) components, or the"
+        log_error "PVE Ceph repo, which provides pinned librbd-dev/libiscsi-dev versions)."
+        log_error "Check /etc/apt/sources.list.d/*.sources (or *.list) and re-run 'apt update'."
+        log_error "Full mk-build-deps output is in $LOG_FILE"
+        exit 1
     fi
 
     # Initialize submodules
