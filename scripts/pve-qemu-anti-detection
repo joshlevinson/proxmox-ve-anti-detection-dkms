@@ -147,14 +147,38 @@ inject_patch_into_rules() {
     fi
 
     # Find the line "# guest-agent is only required for guest systems" and inject before it
-    if grep -q "# guest-agent is only required for guest systems" "$rules_file"; then
-        sed -i '/# guest-agent is only required for guest systems/i\\t# [pve-qemu-anti-detection] Apply anti-detection patch\n\tpatch -p1 < 001-anti-detection.patch\n' "$rules_file"
-        log "Injected patch command into debian/rules"
-    else
+    if ! grep -q "# guest-agent is only required for guest systems" "$rules_file"; then
         log_error "Could not find injection point in debian/rules"
         log_error "Please manually add 'patch -p1 < 001-anti-detection.patch' before the ./configure line"
         return 1
     fi
+
+    # Build the injected block in a heredoc (no manual backslash/newline escaping)
+    # and splice it in with head/tail/cat, rather than a sed -i '...i\...'
+    # one-liner - that approach requires escaping quotes, brackets, and
+    # slashes across three nested layers at once and is easy to get subtly
+    # wrong (and sed's own line-insert addressing has BSD/GNU differences).
+    local insert_file
+    insert_file=$(mktemp)
+    cat > "$insert_file" <<'INSERT_EOF'
+	# [pve-qemu-anti-detection] Apply anti-detection patch
+	patch -p1 < 001-anti-detection.patch
+	# [pve-qemu-anti-detection] Neutralize SMBIOS VM bit via regex substitution
+	# rather than a context-diff hunk, which has proven fragile to upstream drift
+	sed -i 's/t->bios_characteristics_extension_bytes\[1\] |= 0x10;.*/\/* [pve-qemu-anti-detection] do not advertise the VM bit *\//' hw/smbios/smbios.c
+INSERT_EOF
+
+    local target_line new_rules_file
+    target_line=$(grep -n "# guest-agent is only required for guest systems" "$rules_file" | head -1 | cut -d: -f1)
+    new_rules_file=$(mktemp)
+    {
+        head -n "$((target_line - 1))" "$rules_file"
+        cat "$insert_file"
+        tail -n "+${target_line}" "$rules_file"
+    } > "$new_rules_file"
+    mv "$new_rules_file" "$rules_file"
+    rm -f "$insert_file"
+    log "Injected patch command into debian/rules"
 }
 
 remove_disable_downloads() {
@@ -561,7 +585,7 @@ do_unhold() {
 
 show_help() {
     cat <<EOF
-${PROG_NAME} v1.0.2 - DKMS-like auto-patching for pve-qemu-kvm
+${PROG_NAME} v1.0.4 - DKMS-like auto-patching for pve-qemu-kvm
 Author: Hikaru <i@rua.moe>
 Source: https://github.com/HikaruChang/proxmox-ve-anti-detection-dkms
 

@@ -448,17 +448,6 @@ diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-ant
  
      req->writing = 0;
      vscsi_preprocess_desc(req);
-diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/smbios/smbios.c b/hw/smbios/smbios.c
---- a/hw/smbios/smbios.c	2026-03-21 02:19:08.768080341 +0800
-+++ b/hw/smbios/smbios.c	2026-03-21 02:27:53.021413519 +0800
-@@ -583,6 +583,6 @@
-     if (smbios_type0.uefi) {
-         t->bios_characteristics_extension_bytes[1] |= 0x08; /* |= UEFI */
-     }
-     if (smbios_type0.vm) {
--        t->bios_characteristics_extension_bytes[1] |= 0x10; /* |= VM */
-+        /* [pve-qemu-anti-detection] do not advertise the VM bit */
-     }
 diff -ruN --no-dereference '--exclude=.pc' '--exclude=debian' '--exclude=001-anti-detection.patch' a/hw/usb/dev-audio.c b/hw/usb/dev-audio.c
 --- a/hw/usb/dev-audio.c	2026-03-21 02:19:08.812080117 +0800
 +++ b/hw/usb/dev-audio.c	2026-03-21 02:27:53.034413453 +0800

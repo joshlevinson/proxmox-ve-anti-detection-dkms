@@ -1,3 +1,20 @@
+pve-qemu-anti-detection (1.0.4-1) stable; urgency=medium
+
+  * Replace the hw/smbios/smbios.c context-diff hunk (SMBIOS VM bit) with a
+    regex-based sed substitution applied at build time, injected into
+    debian/rules alongside the main patch. The context-diff hunk failed to
+    apply on a real 11.0.0-3 build despite the surrounding file content
+    matching what was tested against; root cause undetermined, but a plain
+    sed substitution on the unique target line is immune to whatever
+    context-matching issue caused the failure
+  * Rewrite the debian/rules injection mechanism (inject_patch_into_rules)
+    to splice content with head/tail/cat instead of a single sed -i
+    '...i\...' one-liner, which required escaping quotes, brackets, and
+    slashes across three nested layers and had BSD/GNU sed address
+    differences around inserting at line 0
+
+ -- Hikaru <i@rua.moe>  Sat, 18 Jul 2026 00:00:00 +0800
+
 pve-qemu-anti-detection (1.0.3-1) stable; urgency=medium
 
   * Add --no-rbd flag / DISABLE_RBD config option to build pve-qemu-kvm
